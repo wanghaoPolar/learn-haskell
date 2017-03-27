@@ -1,19 +1,25 @@
 module Main where
 
+import Options.Applicative
+
+data Greet = Greet { hello :: String, quiet :: Bool}
+
+(<>) :: Monoid a => a -> a -> a
+(<>) = mappend
+
+greetParser :: Parser Greet
+greetParser = Greet
+  <$> strOption
+    ( long "hello"
+    <> metavar "TARGET"
+    <> help "Target for the greeting")
+  <*> switch
+    ( long "quite"
+    <> help "Whether to be quiet")
+
 main :: IO ()
-main = print "hello world"
---
-{-
-addOne :: Int -> Int
-addOne x = x + 1
-
-2 + 3
-(+) 1.5 2.5
-
-elem 3 [1,2,3]
-3 `elem` [1,2,3]
-
-Bar /= True
-
-[1] ++ [] ++ [2,3,4]
--}
+main = do
+  greet <- execParser $ info greetParser mempty
+  case greet of
+    Greet h False -> putStrLn $ "Hello, " ++ h
+    _             -> return ()

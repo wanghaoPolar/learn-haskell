@@ -14,6 +14,13 @@
   (major1) == 4 && (major2) <  9 || \
   (major1) == 4 && (major2) == 9 && (minor) <= 0)
 
+/* package optparse-applicative-0.13.0.0 */
+#define VERSION_optparse_applicative "0.13.0.0"
+#define MIN_VERSION_optparse_applicative(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  13 || \
+  (major1) == 0 && (major2) == 13 && (minor) <= 0)
+
 /* tool gcc-4.2.1 */
 #define TOOL_VERSION_gcc "4.2.1"
 #define MIN_TOOL_VERSION_gcc(major1,major2,minor) (\
