@@ -57,9 +57,16 @@ inOrder (Node leftTree log rightTree) =
   [log] ++
   inOrder rightTree
 
-whatWentWrong :: [LogMessage] -> [String]
-whatWentWrong xs = recur $ inOrder $ build xs
+whatWentWrong :: [LogMessage] -> (LogMessage -> Bool) -> [String]
+whatWentWrong xs include = recur $ inOrder $ build $ filter include xs
   where
     recur [] = []
-    recur ((LogMessage (Error severity) _ info):xs) = if severity > 50 then info:recur xs else recur xs
-    recur (x:xs) = recur xs
+    recur (x:xs) = let (LogMessage _ _ info) = x
+                 in info:recur xs
+
+testLog :: (String -> [LogMessage])
+                  -> ([LogMessage] -> [String])
+                  -> FilePath
+                  -> IO [String]
+testLog parse checker file
+  = checker . parse <$> readFile file

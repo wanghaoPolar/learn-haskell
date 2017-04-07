@@ -11,7 +11,7 @@ skips xs =
     indexedXs = zip xs [1..]
     jump (_, index) =
       filter
-        (\(el, i) ->
+        (\(_, i) ->
           i `mod` index == 0)
         indexedXs
 
@@ -23,7 +23,7 @@ localMaxima xs =
   where
     checkLength l = length l == 3
     isMaximum [x,y,z] = maximum [x,y,z] == y
-    check xs = checkLength xs && isMaximum xs
+    check items = checkLength items && isMaximum items
 
 histogram :: [Integer] -> String
 histogram xs = dataGram ++ bottom
