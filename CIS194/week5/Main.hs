@@ -3,6 +3,7 @@ module Main where
 
 import Control.Applicative
 import qualified Data.Map as M
+import Control.Monad
 import Expr
 import ExprT
 import ExprParser
@@ -70,13 +71,29 @@ class HasVars a where
 data VarExprT = Lit Integer
               | Add VarExprT VarExprT
               | Mul VarExprT VarExprT
-              | Var String Integer
+              | Var String
     deriving (Show, Eq)
 
 instance Expr VarExprT where
   lit = Main.Lit
   add = Main.Add
   mul = Main.Mul
+
+instance HasVars VarExprT where
+  var = Var
+
+instance HasVars (M.Map String Integer -> Maybe Integer) where
+  var = M.lookup
+
+instance Expr (M.Map String Integer -> Maybe Integer) where
+  lit n _ = Just n
+  add x y m = liftM2 (+) (x m) (y m)
+  mul x y m = liftM2 (*) (x m) (y m)
+
+withVars :: [(String, Integer)]
+        -> (M.Map String Integer -> Maybe Integer)
+        -> Maybe Integer
+withVars vs exp = exp $ M.fromList vs
 
 main :: IO ()
 main = print (stackVM Control.Applicative.<$> compile "(3 * -4) + 5")
