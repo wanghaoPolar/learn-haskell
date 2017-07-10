@@ -1,13 +1,14 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Main where
 
-import Control.Applicative
-import qualified Data.Map as M
-import Control.Monad
-import Expr
-import ExprT
-import ExprParser
-import StackVM
+import           Control.Applicative
+import           Control.Monad
+import qualified Data.Map            as M
+import           Expr
+import           ExprParser
+import           ExprT
+import           StackVM
 
 instance Expr ExprT where
     lit = ExprT.Lit
@@ -37,7 +38,7 @@ instance Expr Mod7 where
     mul (Mod7 a) (Mod7 b) = Mod7 ((a * b) `mod` 7)
 
 eval :: ExprT -> Integer
-eval (ExprT.Lit a) = a
+eval (ExprT.Lit a)   = a
 eval (ExprT.Add a b) = eval a + eval b
 eval (ExprT.Mul a b) = eval a * eval b
 
@@ -68,23 +69,12 @@ instance Expr Program where
 class HasVars a where
   var :: String -> a
 
-data VarExprT = Lit Integer
-              | Add VarExprT VarExprT
-              | Mul VarExprT VarExprT
-              | Var String
-    deriving (Show, Eq)
-
-instance Expr VarExprT where
-  lit = Main.Lit
-  add = Main.Add
-  mul = Main.Mul
-
-instance HasVars VarExprT where
-  var = Var
-
 instance HasVars (M.Map String Integer -> Maybe Integer) where
   var = M.lookup
 
+-- add :: a -> a -> a
+-- add (m -> Maybe Integer) -> (m -> Maybe Integer) -> (m -> Maybe Integer)
+-- you have to believe the type
 instance Expr (M.Map String Integer -> Maybe Integer) where
   lit n _ = Just n
   add x y m = liftM2 (+) (x m) (y m)

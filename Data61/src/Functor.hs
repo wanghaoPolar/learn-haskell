@@ -41,8 +41,8 @@ instance Functor Id where
     (a -> b)
     -> Id a
     -> Id b
-  (<$>) =
-    error "todo: Functor (<$>)#instance Id"
+  f <$> ida =
+    Id (f $ runId ida)
 
 -- | Maps a function on the List functor.
 --
@@ -56,8 +56,8 @@ instance Functor List where
     (a -> b)
     -> List a
     -> List b
-  (<$>) =
-    error "todo: Functor (<$>)#instance List"
+  _ <$> Nil = Nil
+  f <$> (x:.xs) = f x :. (f <$> xs)
 
 -- | Maps a function on the Optional functor.
 --
@@ -71,8 +71,8 @@ instance Functor Optional where
     (a -> b)
     -> Optional a
     -> Optional b
-  (<$>) =
-    error "todo: Functor (<$>)#instance Optional"
+  _ <$> Empty = Empty
+  f <$> (Full a) = Full $ f a
 
 -- | Maps a function on the reader ((->) t) functor.
 --
@@ -81,10 +81,9 @@ instance Functor Optional where
 instance Functor ((->) t) where
   (<$>) ::
     (a -> b)
-    -> ((->) t a)
-    -> ((->) t b)
-  (<$>) =
-    error "todo: Functor (<$>)#((->) t)"
+    -> (->) t a
+    -> (->) t b
+  f <$> g = f . g
 
 -- | Anonymous map. Maps a constant value on a functor.
 --
@@ -94,13 +93,20 @@ instance Functor ((->) t) where
 -- prop> x <$ (a :. b :. c :. Nil) == (x :. x :. x :. Nil)
 --
 -- prop> x <$ Full q == Full x
+-- 保留 functor，替换里面的值
 (<$) ::
   Functor f =>
   a
   -> f b
   -> f a
-(<$) =
-  error "todo: Functor#(<$)"
+a <$ fb = const a <$> fb
+
+($>) ::
+  Functor f =>
+  f a
+  -> b
+  -> f b
+($>) = flip (<$)
 
 -- | Anonymous map producing unit value.
 --
@@ -119,8 +125,7 @@ void ::
   Functor f =>
   f a
   -> f ()
-void =
-  error "todo: Functor#void"
+void = (<$) ()
 
 -----------------------
 -- SUPPORT LIBRARIES --

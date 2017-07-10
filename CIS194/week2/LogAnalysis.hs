@@ -28,8 +28,8 @@ parseMessage messageString =
         info                   -> Unknown (unwords info)
 
 parse :: String -> [LogMessage]
-parse fileString =
-    map parseMessage $ lines fileString
+parse =
+    map parseMessage . lines
 
 testParse :: (String -> [LogMessage])
           -> Int

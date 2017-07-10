@@ -16,20 +16,81 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
+                     , Buffer
+                     , Sized
+                     , Scrabble
+                     , Employee
   build-depends:       base
+                     , containers
+                     , directory
+                     , random
+                     , bytestring
   default-language:    Haskell2010
 
 executable my-project-exe
-  hs-source-dirs:      week1
-                     , week2
-                     , week3
-                     , week4
-                     , week5
+  hs-source-dirs:      week8
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , my-project
                      , containers
+                     , mtl
+                     , directory
+                     , random
+                     , bytestring
+  default-language:    Haskell2010
+
+executable week8-project
+  hs-source-dirs:      week8
+  main-is:             Party.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans
+  build-depends:       base
+                     , my-project
+                     , containers
+                     , mtl
+                     , directory
+                     , random
+                     , bytestring
+  default-language:    Haskell2010
+
+executable week9-project
+  hs-source-dirs:      week9
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans
+  build-depends:       base
+                     , my-project
+                     , containers
+                     , mtl
+                     , directory
+                     , random
+                     , bytestring
+  default-language:    Haskell2010
+
+executable week10-project
+  hs-source-dirs:      week10
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans
+  build-depends:       base
+                     , my-project
+                     , containers
+                     , mtl
+                     , directory
+                     , random
+                     , bytestring
+  default-language:    Haskell2010
+
+executable week12-project
+  hs-source-dirs:      week12
+  main-is:             Risk.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans
+  build-depends:       base
+                     , my-project
+                     , containers
+                     , mtl
+                     , directory
+                     , random
+                     , bytestring
+                     , MonadRandom
   default-language:    Haskell2010
 
 test-suite my-project-test

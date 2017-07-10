@@ -13,7 +13,7 @@ import           Data.Char
 ------------------------------------------------------------
 
 zeroOrMore :: Parser a -> Parser [a]
-zeroOrMore p = (:) <$> (p <|> empty) <*> (zeroOrMore p <|> pure []) <|> pure []
+zeroOrMore p = ((:) <$> p <*> zeroOrMore p) <|> pure []
 
 oneOrMore :: Parser a -> Parser [a]
 oneOrMore p = (:) <$> p <*> (zeroOrMore p <|> pure [])

@@ -49,12 +49,12 @@ dropJ 0 x = x
 dropJ n (Append s x y) =
   if | n >= sumSize -> Empty
      | n >= leftSize -> dropJ (n - leftSize) y
-     | otherwise -> Append (dropTag <> yTag) reaminItem y
+     | otherwise -> Append (dropTag <> yTag) dropItem y
      where
       (Size sumSize) = size s
       (Size leftSize) = size $ tag x
-      reaminItem = dropJ n x
-      dropTag = tag reaminItem
+      dropItem = dropJ n x
+      dropTag = tag dropItem
       yTag = tag y
 dropJ _ _ = Empty
 
@@ -91,6 +91,7 @@ fromString strList =
     leftBuffer = fromString left
     rightBuffer = fromString right
 
+-- 计数是从 1 开始的
 replaceJ :: (Sized b, Monoid b) =>
             Int -> b -> a -> JoinList b a -> JoinList b a
 replaceJ index newTag newItem (Append b left right) =

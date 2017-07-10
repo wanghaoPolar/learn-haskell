@@ -40,7 +40,7 @@ generatePairs attackers defenders =
 
 battleResult :: [DieValue] -> [DieValue] -> (Army, Army)
 battleResult attackers defenders =
-  foldr (\(a, d) (as, ds) -> if a > d then (as, ds - 1) else (as-1, ds))
+  foldr (\(a, d) (as, ds) -> if a > d then (as, ds - 1) else (as - 1, ds))
         (attackNum, defenderNum)
         pairs
       where
@@ -52,7 +52,7 @@ getBattle :: Battlefield -> (Army, Army)
 getBattle (Battlefield attackers defenders) =
   (attackNum, denfenNum)
   where
-    attackNum = min 3 attackers
+    attackNum = min 3 (attackers - 1)
     denfenNum = min 2 defenders
 
 sampleBattlefiled :: Battlefield
@@ -79,8 +79,10 @@ invade (Battlefield attackers defenders) =
     stop = defenders == 0 || attackers < 2
   in
     if stop
-    then return (Battlefield attackers defenders)
-    else battle (Battlefield attackers defenders) >>= invade
+      -- 装到 monad 里面返回
+      then return (Battlefield attackers defenders)
+      -- m a -> (a -> m b) -> m b
+      else battle (Battlefield attackers defenders) >>= invade
 
 successProb :: Battlefield -> Rand StdGen Double
 successProb battlefiled =

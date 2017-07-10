@@ -21,6 +21,7 @@ fun2 n
 
 -- 注意 filter 和 takewhile 的顺序
 fun2' :: Integer -> Integer
+-- 如果情况更复杂，就用 foldr (\x acc -> if even n then n * 2 + acc else n + 1 + acc * 2)
 fun2' = sum .
   filter even .
   takeWhile (/= 1) .
@@ -54,6 +55,7 @@ foldTree :: [a] -> Tree a
 foldTree = foldr insertNode Leaf
 
 xor :: [Bool] -> Bool
+-- foldr f z [x1, x2, ..., xn] == x1 `f` (x2 `f` ... (xn `f` z)...)
 xor = foldr (\_ acc -> not acc) False . filter id
 
 map' :: (a -> b) -> [a] -> [b]

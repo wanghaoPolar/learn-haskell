@@ -1,8 +1,8 @@
 ## recommanded progreess
 - [x] Course.List
-- [ ] Course.Functor
-- [ ] Course.Applicative
-- [ ] Course.Monad (please see this issue)
+- [x] Course.Functor
+- [x] Course.Applicative
+- [x] Course.Monad (please see this issue)
 - [ ] Course.FileIO
 - [ ] Course.State
 - [ ] Course.StateT

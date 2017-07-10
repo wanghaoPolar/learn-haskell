@@ -6,7 +6,7 @@
 module Monad(
   Monad(..)
 , join
-, (>>=)  
+, (>>=)
 , (<=<)
 ) where
 
@@ -63,13 +63,16 @@ infixr 1 =<<
 --
 -- >>> ((*) <*> (+2)) 3
 -- 15
+-- <$> :: Functor f => (a -> b) -> f a -> f b
+-- <*> :: Applicative f => f (a -> b) -> f a -> f b
+-- >>= :: Monad f => (a -> f b) -> f a -> f b
 (<*>) ::
   Monad f =>
   f (a -> b)
   -> f a
   -> f b
-(<*>) =
-  error "todo: Monad#(<*>)"
+(<*>) fab fa =
+  (<$> fa) =<< fab
 
 infixl 4 <*>
 
@@ -82,8 +85,8 @@ instance Monad Id where
     (a -> Id b)
     -> Id a
     -> Id b
-  (=<<) =
-    error "todo: Monad (=<<)#instance Id"
+  aidb =<< (Id a) =
+    aidb a
 
 -- | Binds a function on a List.
 --
@@ -94,8 +97,8 @@ instance Monad List where
     (a -> List b)
     -> List a
     -> List b
-  (=<<) =
-    error "todo: Monad (=<<)#instance List"
+  fabs =<< as =
+    flatMap fabs as
 
 -- | Binds a function on an Optional.
 --
@@ -106,8 +109,8 @@ instance Monad Optional where
     (a -> Optional b)
     -> Optional a
     -> Optional b
-  (=<<) =
-    error "todo: Monad (=<<)#instance Optional"
+  _ =<< Empty = Empty
+  faob =<< (Full a) = faob a
 
 -- | Binds a function on the reader ((->) t).
 --
@@ -118,8 +121,8 @@ instance Monad ((->) t) where
     (a -> ((->) t b))
     -> ((->) t a)
     -> ((->) t b)
-  (=<<) =
-    error "todo: Monad (=<<)#instance ((->) t)"
+  atb =<< ta = \t -> (atb $ ta t) t
+
 
 -- | Flattens a combined structure to a single structure.
 --
@@ -138,8 +141,8 @@ join ::
   Monad f =>
   f (f a)
   -> f a
-join =
-  error "todo: Monad#join"
+join ffa = id =<< ffa
+
 
 -- | Implement a flipped version of @(=<<)@, however, use only
 -- @join@ and @(<$>)@.
@@ -152,8 +155,8 @@ join =
   f a
   -> (a -> f b)
   -> f b
-(>>=) =
-  error "todo: Monad#(>>=)"
+fa >>= afb = join $ afb <$> fa
+
 
 infixl 1 >>=
 
@@ -168,8 +171,7 @@ infixl 1 >>=
   -> (a -> f b)
   -> a
   -> f c
-(<=<) =
-  error "todo: Monad#(<=<)"
+(<=<) bfc afb a = bfc =<< afb a
 
 infixr 1 <=<
 

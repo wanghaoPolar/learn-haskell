@@ -25,6 +25,9 @@ import List
 import Optional
 import qualified Prelude as P(fmap, return, (>>=))
 
+-- why Applicative?
+-- fmap 只处理 ...
+
 -- | All instances of the `Applicative` type-class must satisfy three laws.
 -- These laws are not checked by the compiler. These laws are given as:
 --
@@ -61,8 +64,7 @@ infixl 4 <*>
   (a -> b)
   -> f a
   -> f b
-(<$>) =
-  error "todo: Applicative#(<$>)"
+g <$> fa = pure g <*> fa
 
 -- | Insert into Id.
 --
@@ -74,14 +76,12 @@ instance Applicative Id where
   pure ::
     a
     -> Id a
-  pure =
-    error "todo: Applicative pure#instance Id"
-  (<*>) :: 
+  pure = Id
+  (<*>) ::
     Id (a -> b)
     -> Id a
     -> Id b
-  (<*>) =
-    error "todo: Applicative (<*>)#instance Id"
+  (Id f) <*> (Id a) = Id $ f a
 
 -- | Insert into a List.
 --
@@ -93,14 +93,12 @@ instance Applicative List where
   pure ::
     a
     -> List a
-  pure =
-    error "todo: Applicative pure#instance List"
+  pure a = a :. Nil
   (<*>) ::
     List (a -> b)
     -> List a
     -> List b
-  (<*>) =
-    error "todo: Apply (<*>)#instance List"
+  fs <*> as = flatMap (<$> as) fs
 
 -- | Insert into an Optional.
 --
@@ -115,17 +113,14 @@ instance Applicative List where
 -- >>> Full (+8) <*> Empty
 -- Empty
 instance Applicative Optional where
-  pure ::
-    a
-    -> Optional a
-  pure =
-    error "todo: Applicative pure#instance Optional"
+  pure :: a -> Optional a
+  pure = Full
   (<*>) ::
     Optional (a -> b)
     -> Optional a
     -> Optional b
-  (<*>) =
-    error "todo: Apply (<*>)#instance Optional"
+  (Full f) <*> (Full a) = Full $ f a
+  _ <*> _ = Empty
 
 -- | Insert into a constant function.
 --
@@ -147,16 +142,13 @@ instance Applicative Optional where
 -- prop> pure x y == x
 instance Applicative ((->) t) where
   pure ::
-    a
-    -> ((->) t a)
-  pure =
-    error "todo: Applicative pure#((->) t)"
+    a -> (->) t a
+  pure = const
   (<*>) ::
-    ((->) t (a -> b))
-    -> ((->) t a)
-    -> ((->) t b)
-  (<*>) =
-    error "todo: Apply (<*>)#instance ((->) t)"
+    (->) t (a -> b)
+    -> (->) t a
+    -> (->) t b
+  tab <*> ta = \t -> tab t $ ta t
 
 
 -- | Apply a binary function in the environment.
@@ -184,8 +176,7 @@ lift2 ::
   -> f a
   -> f b
   -> f c
-lift2 =
-  error "todo: Applicative#lift2"
+lift2 abc fa fb = pure abc <*> fa <*> fb
 
 -- | Apply a ternary function in the environment.
 --
@@ -216,8 +207,7 @@ lift3 ::
   -> f b
   -> f c
   -> f d
-lift3 =
-  error "todo: Applicative#lift3"
+lift3 abcd fa fb fc = abcd <$> fa <*> fb <*> fc
 
 -- | Apply a quaternary function in the environment.
 --
@@ -249,11 +239,10 @@ lift4 ::
   -> f c
   -> f d
   -> f e
-lift4 =
-  error "todo: Applicative#lift4"
+lift4 abcde fa fb fc fd = abcde <$> fa <*> fb <*> fc <*> fd
 
 -- | Apply, discarding the value of the first argument.
--- Pronounced, right apply.
+-- 直接使用某个包裹在函子里的值填充到生成的函子中
 --
 -- >>> (1 :. 2 :. 3 :. Nil) *> (4 :. 5 :. 6 :. Nil)
 -- [4,5,6,4,5,6,4,5,6]
@@ -275,8 +264,9 @@ lift4 =
   f a
   -> f b
   -> f b
-(*>) =
-  error "todo: Applicative#(*>)"
+-- id <$ fa: 把 id 包在 f 里
+-- 再用 <*> 把 a 变成 b
+fa *> fb = (id <$ fa) <*> fb
 
 -- | Apply, discarding the value of the second argument.
 -- Pronounced, left apply.
@@ -301,8 +291,7 @@ lift4 =
   f b
   -> f a
   -> f b
-(<*) =
-  error "todo: Applicative#(<*)"
+(<*) = flip (*>)
 
 -- | Sequences a list of structures to a structure of list.
 --
@@ -324,8 +313,8 @@ sequence ::
   Applicative f =>
   List (f a)
   -> f (List a)
-sequence =
-  error "todo: Applicative#sequence"
+sequence Nil = pure Nil
+sequence (fa:.fas) = (:.) <$> fa <*> sequence fas
 
 -- | Replicate an effect a given number of times.
 --
@@ -348,8 +337,8 @@ replicateA ::
   Int
   -> f a
   -> f (List a)
-replicateA =
-  error "todo: Applicative#replicateA"
+replicateA 0 _ = pure Nil
+replicateA n fa = (:.) <$> fa <*> replicateA (n - 1) fa
 
 -- | Filter a list with a predicate that produces an effect.
 --
@@ -376,8 +365,11 @@ filtering ::
   (a -> f Bool)
   -> List a
   -> f (List a)
-filtering =
-  error "todo: Applicative#filtering"
+filtering _ Nil = pure Nil
+filtering check (a:.as) =
+  ifThenElse <$> check a <*> ((:.) <$> pure a <*> rest) <*> rest
+    where
+      rest = filtering check as
 
 -----------------------
 -- SUPPORT LIBRARIES --
