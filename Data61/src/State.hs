@@ -40,8 +40,9 @@ instance Functor (State s) where
     (a -> b)
     -> State s a
     -> State s b
-  (<$>) =
-    error "todo: State#(<$>)"
+  ab <$> sa = State $ \s ->
+    let (a, s') = runState sa s
+    in (ab a, s')
 
 -- | Implement the `Applicative` instance for `State s`.
 --
@@ -58,14 +59,16 @@ instance Applicative (State s) where
   pure ::
     a
     -> State s a
-  pure =
-    error "todo: State pure#instance (State s)"
+  pure a =
+    State (\s -> (a, s))
   (<*>) ::
     State s (a -> b)
     -> State s a
     -> State s b 
-  (<*>) =
-    error "todo: State (<*>)#instance (State s)"
+  sfab <*> sa = State $ \s ->
+    let (ab, s') = runState sfab s
+        (a, s'') = runState sa s'
+    in (ab a, s'')
 
 -- | Implement the `Bind` instance for `State s`.
 --
@@ -79,8 +82,9 @@ instance Monad (State s) where
     (a -> State s b)
     -> State s a
     -> State s b
-  (=<<) =
-    error "todo: State (=<<)#instance (State s)"
+  a2sb =<< sa = State $ \s ->
+    let (a, s') = runState sa s
+    in runState (a2sb a) s'
 
 -- | Run the `State` seeded with `s` and retrieve the resulting state.
 --
@@ -89,8 +93,7 @@ exec ::
   State s a
   -> s
   -> s
-exec =
-  error "todo: State#exec"
+exec (State f) = snd . f
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
@@ -99,8 +102,7 @@ eval ::
   State s a
   -> s
   -> a
-eval =
-  error "todo: State#eval"
+eval (State f) = fst . f
 
 -- | A `State` where the state also distributes into the produced value.
 --
@@ -108,8 +110,7 @@ eval =
 -- (0,0)
 get ::
   State s s
-get =
-  error "todo: State#get"
+get = State (\s -> (s, s))
 
 -- | A `State` where the resulting state is seeded with the given value.
 --
@@ -118,8 +119,7 @@ get =
 put ::
   s
   -> State s ()
-put =
-  error "todo: State#put"
+put value = State (const((), value))
 
 -- | Find the first element in a `List` that satisfies a given predicate.
 -- It is possible that no element is found, hence an `Optional` result.
@@ -140,8 +140,11 @@ findM ::
   (a -> f Bool)
   -> List a
   -> f (Optional a)
-findM =
-  error "todo: State#findM"
+findM _ Nil = return Empty
+findM a2fb (a:.as) =
+  -- why this doesn't work?
+  -- ifThenElse <$> a2fb a <*> return (Full a) <*> findM a2fb as
+  (\bool -> if bool then return (Full a) else findM a2fb as) =<< a2fb a
 
 -- | Find the first element in a `List` that repeats.
 -- It is possible that no element repeats, hence an `Optional` result.
@@ -150,12 +153,15 @@ findM =
 --
 -- prop> case firstRepeat xs of Empty -> let xs' = hlist xs in nub xs' == xs'; Full x -> length (filter (== x) xs) > 1
 -- prop> case firstRepeat xs of Empty -> True; Full x -> let (l, (rx :. rs)) = span (/= x) xs in let (l2, r2) = span (/= x) rs in let l3 = hlist (l ++ (rx :. Nil) ++ l2) in nub l3 == l3
-firstRepeat ::
-  Ord a =>
-  List a
-  -> Optional a
-firstRepeat =
-  error "todo: State#firstRepeat"
+checkRepeat :: Ord a => b -> b -> a -> State (S.Set a) b
+checkRepeat isMember notMember a = State $ \s ->
+  if S.member a s
+    then (isMember, s)
+    else (notMember, S.insert a s)
+
+firstRepeat :: Ord a => List a -> Optional a
+firstRepeat as =
+  eval (findM (checkRepeat True False) as) S.empty
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
@@ -167,8 +173,7 @@ distinct ::
   Ord a =>
   List a
   -> List a
-distinct =
-  error "todo: State#distinct"
+distinct as = eval (filtering (checkRepeat False True) as) S.empty
 
 -- | A happy number is a positive integer, where the sum of the square of its digits eventually reaches 1 after repetition.
 -- In contrast, a sad number (not a happy number) is where the sum of the square of its digits never reaches 1
@@ -191,8 +196,20 @@ distinct =
 --
 -- >>> isHappy 44
 -- True
+intToints :: Integer -> List Integer
+intToints n =
+  if n < 10
+    then n:.Nil
+    else let (d, m) = n `divMod` 10 in m:.intToints d
+
+square :: Integer -> Integer
+square n = n * n
+
+process :: Integer -> List Integer
+process = produce (sum . map square . intToints)
+
 isHappy ::
   Integer
   -> Bool
-isHappy =
-  error "todo: State#isHappy"
+isHappy n =
+  Optional.contains 1 $ firstRepeat $ process n

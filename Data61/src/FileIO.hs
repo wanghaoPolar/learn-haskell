@@ -74,7 +74,8 @@ the contents of c
 main ::
   IO ()
 main =
-  error "todo: FileIO#main"
+  getArgs >>= \files ->
+    run $ headOr "" files
 
 type FilePath =
   Chars
@@ -83,31 +84,40 @@ type FilePath =
 run ::
   Chars
   -> IO ()
-run =
-  error "todo: FileIO#run"
-
+run rootFilePath = 
+  getFile rootFilePath >>= \(_, rootContent) ->
+    let 
+      files = lines rootContent
+    in
+      getFiles files >>= printFiles
+  
 getFiles ::
   List FilePath
   -> IO (List (FilePath, Chars))
-getFiles =
-  error "todo: FileIO#getFiles"
+getFiles filePaths =
+  sequence $ map getFile filePaths
+  -- mapM getFile filePaths
 
 getFile ::
   FilePath
   -> IO (FilePath, Chars)
-getFile =
-  error "todo: FileIO#getFile"
+getFile filePath =
+  readFile filePath >>= \content
+    -> return (filePath, content)
 
 printFiles ::
   List (FilePath, Chars)
   -> IO ()
 printFiles =
-  error "todo: FileIO#printFiles"
+  void $ sequence . map (uncurry printFile)
+  -- void $ mapM (uncurry printFile)
 
 printFile ::
   FilePath
   -> Chars
   -> IO ()
-printFile =
-  error "todo: FileIO#printFile"
-
+printFile path content =
+  let prefix = "============="
+  in
+    putStrLn (prefix ++ path) >>= \_ ->
+      putStrLn content

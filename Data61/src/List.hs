@@ -102,8 +102,8 @@ product (n:.ns) = n * product ns
 --
 -- prop> foldLeft (-) (sum x) x == 0
 sum ::
-  List Int
-  -> Int
+  List Integer
+  -> Integer
 sum Nil = 0
 sum (n:.ns) = n + sum ns
 

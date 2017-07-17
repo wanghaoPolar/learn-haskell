@@ -34,13 +34,17 @@ newtype StateT s f a =
 --
 -- >>> runStateT ((+1) <$> (pure 2) :: StateT Int List Int) 0
 -- [(3,0)]
+firstST :: (a -> b) -> (a, s) -> (b, s)
+firstST f (a, s) = (f a, s)
+
 instance Functor f => Functor (StateT s f) where
   (<$>) ::
     (a -> b)
     -> StateT s f a
     -> StateT s f b
-  (<$>) =
-    error "todo: StateT (<$>)#instance (StateT s f)"
+  a2b <$> s2fas = StateT $ \s ->
+    let fas = runStateT s2fas s
+    in  firstST a2b <$> fas
 
 -- | Implement the `Applicative` instance for @StateT s f@ given a @Monad f@.
 --
@@ -63,14 +67,13 @@ instance Monad f => Applicative (StateT s f) where
   pure ::
     a
     -> StateT s f a
-  pure =
-    error "todo: StateT pure#instance (StateT s f)"
+  pure a = StateT $ \s -> pure (a, s)
   (<*>) ::
    StateT s f (a -> b)
     -> StateT s f a
     -> StateT s f b
-  (<*>) =
-    error "todo: StateT (<*>)#instance (StateT s f)"
+  s2fa2b <*> s2fa = StateT $ \s ->
+    runStateT s2fa2b s >>= (\(a2b, s') -> let fa = runStateT s2fa s' in firstST a2b <$> fa)
 
 -- | Implement the `Monad` instance for @StateT s f@ given a @Monad f@.
 -- Make sure the state value is passed through in `bind`.
@@ -85,8 +88,9 @@ instance Monad f => Monad (StateT s f) where
     (a -> StateT s f b)
     -> StateT s f a
     -> StateT s f b
-  (=<<) =
-    error "todo: StateT (=<<)#instance (StateT s f)"
+  a2s2fb =<< s2fa = StateT $ \s ->
+    let fa = runStateT s2fa s
+    in  fa >>= (\(a, s') -> let s2fb = a2s2fb a in runStateT s2fb s')
 
 -- | A `State'` is `StateT` specialised to the `Id` functor.
 type State' s a =
@@ -99,8 +103,7 @@ type State' s a =
 state' ::
   (s -> (a, s))
   -> State' s a
-state' =
-  error "todo: StateT#state'"
+state' s2a = StateT $ \s -> Id (s2a s)
 
 -- | Provide an unwrapper for `State'` values.
 --
@@ -110,8 +113,7 @@ runState' ::
   State' s a
   -> s
   -> (a, s)
-runState' =
-  error "todo: StateT#runState'"
+runState' s'sa s = let (Id as) = runStateT s'sa s in as
 
 -- | Run the `StateT` seeded with `s` and retrieve the resulting state.
 execT ::
@@ -119,16 +121,14 @@ execT ::
   StateT s f a
   -> s
   -> f s
-execT =
-  error "todo: StateT#execT"
+execT stfa s = snd <$> runStateT stfa s
 
 -- | Run the `State` seeded with `s` and retrieve the resulting state.
 exec' ::
   State' s a
   -> s
   -> s
-exec' =
-  error "todo: StateT#exec'"
+exec' stfa s = let (Id (_, s')) = runStateT stfa s in s'
 
 -- | Run the `StateT` seeded with `s` and retrieve the resulting value.
 evalT ::
@@ -136,16 +136,14 @@ evalT ::
   StateT s f a
   -> s
   -> f a
-evalT =
-  error "todo: StateT#evalT"
+evalT stfa s = fst <$> runStateT stfa s 
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 eval' ::
   State' s a
   -> s
   -> a
-eval' =
-  error "todo: StateT#eval'"
+eval' stfa s = let (Id (a, _)) = runStateT stfa s in a 
 
 -- | A `StateT` where the state also distributes into the produced value.
 --
@@ -154,8 +152,7 @@ eval' =
 getT ::
   Monad f =>
   StateT s f s
-getT =
-  error "todo: StateT#getT"
+getT = StateT $ \s -> pure(s, s)
 
 -- | A `StateT` where the resulting state is seeded with the given value.
 --
@@ -168,8 +165,7 @@ putT ::
   Monad f =>
   s
   -> StateT s f ()
-putT =
-  error "todo: StateT#putT"
+putT s = StateT $ const $ pure ((), s)
 
 -- | Remove all duplicate elements in a `List`.
 --

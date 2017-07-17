@@ -3,8 +3,8 @@
 - [x] Course.Functor
 - [x] Course.Applicative
 - [x] Course.Monad (please see this issue)
-- [ ] Course.FileIO
-- [ ] Course.State
+- [x] Course.FileIO
+- [x] Course.State
 - [ ] Course.StateT
 - [ ] Course.Extend
 - [ ] Course.Comonad
