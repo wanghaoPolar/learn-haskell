@@ -3,6 +3,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 
 module StateT where
 
@@ -172,12 +173,15 @@ putT s = StateT $ const $ pure ((), s)
 -- /Tip:/ Use `filtering` and `State'` with a @Data.Set#Set@.
 --
 -- prop> distinct' xs == distinct' (flatMap (\x -> x :. x :. Nil) xs)
+checker :: (Ord a, Num a) => a -> State' (S.Set a) Bool
+checker a = state' (\s ->
+  if S.member a s then (False, s) else (True, S.insert a s))
+
 distinct' ::
   (Ord a, Num a) =>
   List a
   -> List a
-distinct' =
-  error "todo: StateT#distinct'"
+distinct' as = eval' (filtering checker as) S.empty
 
 -- | Remove all duplicate elements in a `List`.
 -- However, if you see a value greater than `100` in the list,
@@ -190,12 +194,18 @@ distinct' =
 --
 -- >>> distinctF $ listh [1,2,3,2,1,101]
 -- Empty
+checkerF :: (Ord a, Num a) => a -> StateT (S.Set a) Optional Bool
+checkerF a = StateT $ \s ->
+  if | a > 100 -> Empty
+     | S.member a s -> Full (False, s)
+     | otherwise -> Full (True, S.insert a s)
+
+
 distinctF ::
   (Ord a, Num a) =>
   List a
   -> Optional (List a)
-distinctF =
-  error "todo: StateT#distinctF"
+distinctF as = evalT (filtering checkerF as) S.empty
 
 -- | An `OptionalT` is a functor of an `Optional` value.
 data OptionalT f a =
@@ -209,26 +219,38 @@ data OptionalT f a =
 -- >>> runOptionalT $ (+1) <$> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty]
 instance Functor f => Functor (OptionalT f) where
-  (<$>) =
-    error "todo: StateT (<$>)#instance (OptionalT f)"
+  (<$>) ::
+      (a -> b)
+      -> OptionalT f a
+      -> OptionalT f b
+  f <$> OptionalT a = OptionalT ((<$>) f <$> a )
 
 -- | Implement the `Applicative` instance for `OptionalT f` given a Applicative f.
 --
 -- >>> runOptionalT $ OptionalT (Full (+1) :. Full (+2) :. Nil) <*> OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Empty,Full 3,Empty]
 instance Applicative f => Applicative (OptionalT f) where
-  pure =
-    error "todo: StateT pure#instance (OptionalT f)"
-  (<*>) =
-    error "todo: StateT (<*>)#instance (OptionalT f)"
+  -- pure a = OptionalT (pure (Full a))
+  pure = OptionalT . pure . pure
+  -- lift: 在 applicative 中进行操作
+  OptionalT f <*> OptionalT a = OptionalT (lift2 (<*>) f a)
 
 -- | Implement the `Monad` instance for `OptionalT f` given a Monad f.
 --
 -- >>> runOptionalT $ (\a -> OptionalT (Full (a+1) :. Full (a+2) :. Nil)) =<< OptionalT (Full 1 :. Empty :. Nil)
 -- [Full 2,Full 3,Empty]
 instance Monad f => Monad (OptionalT f) where
-  (=<<) =
-    error "todo: StateT (=<<)#instance (OptionalT f)"
+  (=<<) :: (a -> OptionalT f b) -> OptionalT f a -> OptionalT f b
+  -- f =<< (OptionalT a) = OptionalT $ join result'
+  --   where
+  --     result = ((<$>) f) <$> a
+  --     getOp (Full re) = runOptionalT re
+  --     getOp Empty = pure Empty
+  --     result' = getOp <$> result
+  f =<< OptionalT x =
+    OptionalT ((\o -> case o of
+                        Empty -> pure Empty
+                        Full a -> runOptionalT (f a)) =<< x)
 
 -- | A `Logger` is a pair of a list of log values (`[l]`) and an arbitrary value (`a`).
 data Logger l a =
