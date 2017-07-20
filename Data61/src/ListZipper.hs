@@ -64,16 +64,15 @@ data MaybeListZipper a =
 -- >>> (+1) <$> (zipper [3,2,1] 4 [5,6,7])
 -- [4,3,2] >5< [6,7,8]
 instance Functor ListZipper where
-  (<$>) =
-    error "todo: ListZipper (<$>)#instance ListZipper"
+  f <$> (ListZipper l a r) = ListZipper (f <$> l) (f a) (f <$> r)
 
 -- | Implement the `Functor` instance for `MaybeListZipper`.
 --
 -- >>> (+1) <$> (IsZ (zipper [3,2,1] 4 [5,6,7]))
 -- [4,3,2] >5< [6,7,8]
 instance Functor MaybeListZipper where
-  (<$>) =
-    error "todo: ListZipper (<$>)#instance MaybeListZipper"
+  _ <$> IsNotZ = IsNotZ
+  f <$> (IsZ z) = IsZ $ f <$> z
 
 -- | Create a `MaybeListZipper` positioning the focus at the head.
 --
@@ -87,8 +86,8 @@ instance Functor MaybeListZipper where
 fromList ::
   List a
   -> MaybeListZipper a
-fromList =
-  error "todo: ListZipper#fromList"
+fromList Nil = IsNotZ
+fromList (a:.as) = IsZ $ ListZipper Nil a as
 
 -- | Retrieve the `ListZipper` from the `MaybeListZipper` if there is one.
 --
@@ -98,8 +97,8 @@ fromList =
 toOptional ::
   MaybeListZipper a
   -> Optional (ListZipper a)
-toOptional =
-  error "todo: ListZipper#toOptional"
+toOptional IsNotZ = Empty
+toOptional (IsZ lz) = Full lz 
 
 zipper ::
   [a]
@@ -160,8 +159,7 @@ asMaybeZipper f (IsZ z) =
 toList ::
   ListZipper a
   -> List a
-toList =
-  error "todo: ListZipper#toList"
+toList (ListZipper l a r) = reverse l ++ (a :. r)
 
 -- | Convert the given (maybe) zipper back to a list.
 toListZ ::
@@ -183,8 +181,7 @@ withFocus ::
   (a -> a)
   -> ListZipper a
   -> ListZipper a
-withFocus =
-  error "todo: ListZipper#withFocus"
+withFocus f (ListZipper l a r) = ListZipper l (f a) r
 
 -- | Set the focus of the zipper to the given value.
 -- /Tip:/ Use `withFocus`.
@@ -198,8 +195,7 @@ setFocus ::
   a
   -> ListZipper a
   -> ListZipper a
-setFocus =
-  error "todo: ListZipper#setFocus"
+setFocus = withFocus . const
 
 -- A flipped infix alias for `setFocus`. This allows:
 --
@@ -221,8 +217,8 @@ setFocus =
 hasLeft ::
   ListZipper a
   -> Bool
-hasLeft =
-  error "todo: ListZipper#hasLeft"
+hasLeft (ListZipper Nil _ _) = False
+hasLeft _ = True
 
 -- | Returns whether there are values to the right of focus.
 --
@@ -234,8 +230,8 @@ hasLeft =
 hasRight ::
   ListZipper a
   -> Bool
-hasRight =
-  error "todo: ListZipper#hasRight"
+hasRight (ListZipper _ _ Nil) = False
+hasRight _ = True
 
 -- | Seek to the left for a location matching a predicate, starting from the
 -- current one.
@@ -259,9 +255,14 @@ findLeft ::
   (a -> Bool)
   -> ListZipper a
   -> MaybeListZipper a
-findLeft =
-  error "todo: ListZipper#findLeft"
-    
+findLeft _ (ListZipper Nil _ _) = IsNotZ
+findLeft f (ListZipper l a r)= 
+  let (newl, newr) = break f l
+  in
+    case newr of
+      Nil -> IsNotZ
+      (headR:.tailR) -> IsZ $ ListZipper tailR headR (reverse newl ++ (a:.r))
+
 -- | Seek to the right for a location matching a predicate, starting from the
 -- current one.
 --
@@ -284,8 +285,13 @@ findRight ::
   (a -> Bool)
   -> ListZipper a
   -> MaybeListZipper a
-findRight =
-  error "todo: ListZipper#findRight"
+findRight _ (ListZipper _ _ Nil) = IsNotZ
+findRight f (ListZipper l a r) =
+  let (newl, newr) = break f r
+  in 
+    case newr of
+      Nil -> IsNotZ
+      (headR:.tailR) -> IsZ $ ListZipper (reverse newl ++ (a:.l)) headR tailR
 
 -- | Move the zipper left, or if there are no elements to the left, go to the far right.
 --
@@ -297,8 +303,13 @@ findRight =
 moveLeftLoop ::
   ListZipper a
   -> ListZipper a
-moveLeftLoop =
-  error "todo: ListZipper#moveLeftLoop"
+moveLeftLoop (ListZipper Nil a r) =
+  let fullList = a:.r
+      leng = length fullList
+      (newl, (a:._)) = (take (leng - 1) fullList, drop (leng - 1) fullList)
+  in ListZipper (reverse newl) a Nil
+moveLeftLoop (ListZipper (a:.as) f r) =
+  ListZipper as a (f:.r)
 
 -- | Move the zipper right, or if there are no elements to the right, go to the far left.
 --
@@ -310,8 +321,16 @@ moveLeftLoop =
 moveRightLoop ::
   ListZipper a
   -> ListZipper a
-moveRightLoop =
-  error "todo: ListZipper#moveRightLoop"
+moveRightLoop (ListZipper l a Nil) =
+  let 
+    leng = length l
+    (l', (a':._)) = (take (leng - 1) l, drop (leng - 1) l)
+  in
+    ListZipper Nil a' (reverse l' ++ (a:.Nil))
+moveRightLoop (ListZipper l a r) =
+  let (headr:.tailr) = r
+  in
+    ListZipper (a:.l) headr tailr
 
 -- | Move the zipper one position to the left.
 --
