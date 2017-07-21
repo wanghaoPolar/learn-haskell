@@ -34,3 +34,6 @@ instance P.Monad Id where
     flip bindId
   return =
     Id
+
+main :: IO ()
+main = P.print "Hello World"
