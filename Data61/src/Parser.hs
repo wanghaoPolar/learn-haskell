@@ -68,7 +68,7 @@ unexpectedCharParser ::
   Char
   -> Parser a
 unexpectedCharParser c =
-  P (\_ -> ErrorResult (UnexpectedChar c))
+  P (const $ ErrorResult (UnexpectedChar c))
 
 -- | Return a parser that always succeeds with the given value and consumes no input.
 --
@@ -85,8 +85,7 @@ valueParser a = P (\input -> Result input a)
 -- True
 failed ::
   Parser a
-failed =
-  error "todo: Parser#failed"
+failed = P (const $ ErrorResult Failed)
 
 -- | Return a parser that succeeds with a character off the input or fails with an error if the input is empty.
 --
@@ -97,8 +96,10 @@ failed =
 -- True
 character ::
   Parser Char
-character =
-  error "todo: Parser#character"
+character = P (\as ->
+  case as of
+    Nil -> ErrorResult Failed
+    (a:.as') -> Result as' a)
 
 -- | Return a parser that maps any succeeding result with the given function.
 --
@@ -111,8 +112,14 @@ mapParser ::
   (a -> b)
   -> Parser a
   -> Parser b
-mapParser =
-  error "todo: Parser#mapParser"
+mapParser f (P a) = P (
+  \input -> 
+    let result = a input
+    in
+      case result of
+        (Result input a) -> Result input (f a)
+        (ErrorResult e) -> (ErrorResult e)
+  )
 
 -- | This is @mapParser@ with the arguments flipped.
 -- It might be more helpful to use this function if you prefer this argument order.
@@ -148,8 +155,11 @@ bindParser ::
   (a -> Parser b)
   -> Parser a
   -> Parser b
-bindParser =
-  error "todo: Parser#bindParser"
+bindParser f pa = P (\input ->
+  case parse pa input of
+    (Result input' a) -> let pb = f a in parse pb input'
+    (ErrorResult e) -> ErrorResult e
+  )
 
 -- | This is @bindParser@ with the arguments flipped.
 -- It might be more helpful to use this function if you prefer this argument order.
@@ -178,8 +188,7 @@ flbindParser =
   Parser a
   -> Parser b
   -> Parser b
-(>>>) =
-  error "todo: Parser#(>>>)"
+pa >>> pb = flbindParser pa (const pb)
 
 -- | Return a parser that tries the first parser for a successful value.
 --
@@ -202,8 +211,13 @@ flbindParser =
   Parser a
   -> Parser a
   -> Parser a
-(|||) =
-  error "todo: Parser#(|||)"
+pa1 ||| pa2 = P (\input ->
+  let result = parse pa1 input
+  in
+    case result of
+      (ErrorResult _) -> parse pa2 input
+      (Result _ _) -> result
+  )
 
 infixl 3 |||
 
@@ -231,8 +245,7 @@ infixl 3 |||
 list ::
   Parser a
   -> Parser (List a)
-list =
-  error "todo: Parser#list"
+list pa = (pa `flbindParser` (\a -> mapParser (\result -> a:.result) (list pa ||| valueParser Nil))) ||| valueParser Nil
 
 -- | Return a parser that produces at least one value from the given parser then
 -- continues producing a list of values from the given parser (to ultimately produce a non-empty list).
@@ -250,8 +263,7 @@ list =
 list1 ::
   Parser a
   -> Parser (List a)
-list1 =
-  error "todo: Parser#list1"
+list1 pa = pa `flbindParser` (\a -> mapParser (\result -> a:.result) (list1 pa ||| valueParser Nil))
 
 -- | Return a parser that produces a character but fails if
 --
@@ -269,8 +281,11 @@ list1 =
 satisfy ::
   (Char -> Bool)
   -> Parser Char
-satisfy =
-  error "todo: Parser#satisfy"
+satisfy f = P (\input ->
+    case input of
+      Nil -> ErrorResult UnexpectedEof
+      (a:.as) -> if f a then Result as a else ErrorResult $ UnexpectedChar a
+  )
 
 -- | Return a parser that produces the given character but fails if
 --
@@ -293,8 +308,7 @@ is =
 -- /Tip:/ Use the @satisfy@ and @Data.Char#isDigit@ functions.
 digit ::
   Parser Char
-digit =
-  error "todo: Parser#digit"
+digit = satisfy isDigit
 
 -- | Return a parser that produces zero or a positive integer but fails if
 --
@@ -591,8 +605,7 @@ instance Functor Parser where
     (a -> b)
     -> Parser a
     -> Parser b
-  (<$>) =
-     error "todo: Parser (<$>)#instance Parser"
+  (<$>) = mapParser
 
 -- | Write an Applicative functor instance for a @Parser@.
 -- /Tip:/ Use @bindParser@ and @valueParser@.
@@ -600,14 +613,12 @@ instance Applicative Parser where
   pure ::
     a
     -> Parser a
-  pure =
-    error "todo: Parser pure#instance Parser"
+  pure = valueParser
   (<*>) ::
     Parser (a -> b)
     -> Parser a
     -> Parser b
-  (<*>) =
-    error "todo: Parser (<*>)#instance Parser"
+  (P f) <*> (P a) = error "applicative instance"
 
 -- | Write a Monad instance for a @Parser@.
 instance Monad Parser where
@@ -615,5 +626,4 @@ instance Monad Parser where
     (a -> Parser b)
     -> Parser a
     -> Parser b
-  (=<<) =
-    error "todo: Parser (=<<)#instance Parser"
+  (=<<) = bindParser
