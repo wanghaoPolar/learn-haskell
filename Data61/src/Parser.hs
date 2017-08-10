@@ -114,7 +114,7 @@ mapParser ::
   -> Parser a
   -> Parser b
 mapParser f (P a) = P (
-  \input -> 
+  \input ->
     let result = a input
     in
       case result of
@@ -227,6 +227,10 @@ pa1 ||| pa2 = P (\input ->
   )
 
 infixl 3 |||
+
+oneOf :: List Char -> Parser Char
+oneOf (a:.Nil) = is a
+oneOf (a:.as) = foldRight (\cur acc -> is cur ||| acc) (is a) as
 
 -- | Return a parser that continues producing a list of values from the given parser.
 --
@@ -350,6 +354,10 @@ natural = mapParser (P.read . hlist) (list1 digit)
 space ::
   Parser Char
 space = satisfy isSpace
+
+space0 ::
+  Parser Chars
+space0 = list space
 
 -- | Return a parser that produces one or more space characters
 -- (consuming until the first non-space) but fails if

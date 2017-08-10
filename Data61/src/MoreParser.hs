@@ -53,7 +53,7 @@ spaces = list space
 tok ::
   Parser a
   -> Parser a
-tok a = a <<< spaces
+tok a = spaces >>> a <<< spaces
 
 -- | Write a function that parses the given char followed by 0 or more spaces.
 --
