@@ -13,8 +13,8 @@
 - [x] Course.ListZipper
 - [x] Course.Parser (see also Course.Person for the parsing rules)
 - [x] Course.MoreParser
-- [ ] Course.JsonParser
-- [ ] Course.Interactive
-- [ ] Course.Anagrams
-- [ ] Course.FastAnagrams
+- [x] Course.JsonParser
+- [x] Course.Interactive
+- [x] Course.Anagrams
+- [x] Course.FastAnagrams
 - [ ] Course.Cheque

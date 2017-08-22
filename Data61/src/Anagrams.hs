@@ -32,13 +32,18 @@ anagrams ::
   Chars
   -> Filename
   -> IO (List Chars)
-anagrams =
-  error "todo: Anagrams#anagrams"
+anagrams target dictionFile =
+  let allWords = permutations target
+  in readFile dictionFile >>= \file ->
+    let wordsInFile = words file
+    in return $ fileter (\w -> w `elem` allWords) wordsInFile
+  -- (<$>) (intersectBy equalIgnoringCase (permutations name) . lines) . readFile
 
 -- Compare two strings for equality, ignoring case
 equalIgnoringCase ::
   Chars
   -> Chars
   -> Bool
-equalIgnoringCase =
-  error "todo: Anagrams#equalIgnoringCase"
+equalIgnoringCase a b =
+  toLower a == toLower b
+ -- (==) `on` map toLower

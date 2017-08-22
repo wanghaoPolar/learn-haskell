@@ -82,8 +82,10 @@ data Op =
 -- /Tip:/ @putStrLn :: String -> IO ()@ -- Prints a string and then a new line to standard output.
 convertInteractive ::
   IO ()
-convertInteractive =
-  error "todo: Interactive#convertInteractive"
+convertInteractive = 
+  putStrLn "Enter a string to convert to upper-case" >-
+  getLine >>= \line ->
+  putStrLn $ toUpper <$> line
 
 -- |
 --
@@ -111,7 +113,12 @@ convertInteractive =
 reverseInteractive ::
   IO ()
 reverseInteractive =
-  error "todo: Interactive#reverseInteractive"
+  putStrLn "enter a file name to reverse" >-
+  getLine >>= \inputFile ->
+    putStrLn "enter a file name to write the reversed file to" >-
+    getLine >>= \outputFile ->
+      readFile inputFile >>= \input ->
+        writeFile outputFile $ reverse input
 
 -- |
 --
@@ -134,10 +141,15 @@ reverseInteractive =
 -- /Tip:/ @putStr :: String -> IO ()@ -- Prints a string to standard output.
 --
 -- /Tip:/ @putStrLn :: String -> IO ()@ -- Prints a string and then a new line to standard output.
+urlEncode :: string -> string
+urlEncode = id
+
 encodeInteractive ::
   IO ()
 encodeInteractive =
-  error "todo: Interactive#encodeInteractive"
+  putStrLn "enter the url to encode" >-
+  getLine >>= \line ->
+    putStrLn $ urlEncode line
 
 interactive ::
   IO ()

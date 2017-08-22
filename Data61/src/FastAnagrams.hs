@@ -16,6 +16,7 @@ fastAnagrams ::
   -> IO (List Chars)
 fastAnagrams =
   error "todo: FastAnagrams#fastAnagrams"
+  -- (flip (filter . flip S.member) (permutations name) . S.fromList . hlist . lines) <$> readFile f
 
 newtype NoCaseString =
   NoCaseString {
