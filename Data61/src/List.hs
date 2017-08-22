@@ -115,7 +115,7 @@ sum (n:.ns) = n + sum ns
 -- prop> sum (map (const 1) x) == length x
 length ::
   List a
-  -> Int
+  -> Integer
 length Nil = 0
 length (n:.ns) = 1 + length ns
 
@@ -487,6 +487,18 @@ unlines ::
   -> Chars
 unlines =
   listh . P.unlines . hlist . map hlist
+
+splitAt :: Integer -> List a -> (List a, List a)
+splitAt n la = (take n la, drop n la)
+
+divide :: Integer -> List a -> List (List a)
+divide n la =
+  let (thisTake, remain) = splitAt n la
+  in if length thisTake == n then thisTake:.(divide n remain) else thisTake:.Nil
+
+reverseDivide :: Integer -> List a -> List (List a)
+reverseDivide _ Nil = Nil
+reverseDivide n la = reverse $ map reverse (divide n $ reverse la)
 
 words ::
   Chars

@@ -25,6 +25,7 @@ import List
 import Functor
 import Applicative
 import Monad
+import Parser
 
 -- $setup
 -- >>> :set -XOverloadedStrings
@@ -188,30 +189,8 @@ data Digit =
   | Eight
   | Nine
   deriving (Eq, Enum, Bounded)
-
-showDigit ::
-  Digit
-  -> Chars
-showDigit Zero =
-  "zero"
-showDigit One =
-  "one"
-showDigit Two =
-  "two"
-showDigit Three =
-  "three"
-showDigit Four =
-  "four"
-showDigit Five =
-  "five"
-showDigit Six =
-  "six"
-showDigit Seven =
-  "seven"
-showDigit Eight =
-  "eight"
-showDigit Nine =
-  "nine"
+instance Show Digit where
+  show = show . toChar
 
 -- A data type representing one, two or three digits, which may be useful for grouping.
 data Digit3 =
@@ -220,6 +199,23 @@ data Digit3 =
   | D3 Digit Digit Digit
   deriving Eq
 
+instance Show Digit3 where
+  show (D1 d) = show d
+  show (D2 d1 d2) = show (show <$> d1:.d2:.Nil)
+  show (D3 d1 d2 d3) = show (show <$> d1:.d2:.d3:.Nil)
+
+toChar :: Digit -> Char
+toChar Zero = '0'
+toChar One = '1'
+toChar Two = '2'
+toChar Three = '3'
+toChar Four = '4'
+toChar Five = '5'
+toChar Six = '6'
+toChar Seven = '7'
+toChar Eight = '8'
+toChar Nine = '9'
+    
 -- Possibly convert a character to a digit.
 fromChar ::
   Char
@@ -325,3 +321,72 @@ dollars ::
   -> Chars
 dollars =
   error "todo: Cheque#dollars"
+
+constructDigit3 :: Chars -> Optional Digit3
+constructDigit3 (d:.Nil) = D1 <$> fromChar d
+constructDigit3 (d1:.d2:.Nil) = D2 <$> fromChar d1 <*> fromChar d2
+constructDigit3 (d1:.d2:.d3:.Nil) = D3 <$> fromChar d1 <*> fromChar d2 <*> fromChar d3
+
+showDigitsList :: List Digits -> Chars
+showDigitsList = 
+  error "todo: showDigitsList"
+
+showDigits :: Digit3 -> Chars
+showDigits (D1 d) = showDigit d
+showDigits (D2 d1 d2) = show2Digits d1 d2
+showDigits (D3 d1 d2 d3) = show3Digits d1 d2 d3
+
+showDigit ::
+  Digit
+  -> Chars
+showDigit Zero =
+  "zero"
+showDigit One =
+  "one"
+showDigit Two =
+  "two"
+showDigit Three =
+  "three"
+showDigit Four =
+  "four"
+showDigit Five =
+  "five"
+showDigit Six =
+  "six"
+showDigit Seven =
+  "seven"
+showDigit Eight =
+  "eight"
+showDigit Nine =
+  "nine"
+
+show2Digits :: Digit -> Digit -> Chars
+show2Digits One Zero = "ten"
+show2Digits One One = "eleven"
+show2Digits One Two = "twelve"
+show2Digits One Three = "thirteen"
+show2Digits One Four = "forteen"
+show2Digits One Five = "fifeteen"
+show2Digits One Six = "sixteen"
+show2Digits One Seven = "seventeen"
+show2Digits One Eight = "eighteen"
+show2Digits One Nine = "nineteen"
+show2Digits Two Zero = "twenty"
+show2Digits Two d2 = "twenty-" ++ showDigit d2
+show2Digits Three Zero = "thirty"
+show2Digits Three d2 = "thirty-" ++ showDigit d2
+show2Digits Four Zero = "forty"
+show2Digits Four d2 = "forty-" ++ showDigit d2
+show2Digits Five Zero = "fifty"
+show2Digits Five d2 = "fifty-" ++ showDigit d2
+show2Digits Six Zero = "sixty"
+show2Digits Six d2 = "sixty-" ++ showDigit d2
+show2Digits Seven Zero = "seventy"
+show2Digits Seven d2 = "seventy-" ++ showDigit d2
+show2Digits Eight Zero = "eighty"
+show2Digits Eight d2 = "eighty-" ++ showDigit d2
+show2Digits Nine Zero = "ninty"
+show2Digits Nine d2 = "ninty-" ++ showDigit d2
+
+show3Digits :: Digit -> Digit -> Digit -> Chars
+show3Digits d1 d2 d3 = showDigit d1 ++ " hundred and " ++ show2Digits d2 d3
