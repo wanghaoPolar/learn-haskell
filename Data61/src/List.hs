@@ -191,6 +191,14 @@ flatten ::
 flatten Nil = Nil
 flatten (as:.ass) = as ++ flatten ass
 
+flattenWith ::
+  a
+  -> List (List a)
+  -> List a
+flattenWith _ Nil = Nil
+flattenWith _ (as:.Nil) = as
+flattenWith a (as:.ass) = as ++ (a:.flattenWith a ass)
+
 -- | Map a function then flatten to a list.
 --
 -- >>> flatMap (\x -> x :. x + 1 :. x + 2 :. Nil) (1 :. 2 :. 3 :. Nil)

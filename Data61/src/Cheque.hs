@@ -26,6 +26,7 @@ import Functor
 import Applicative
 import Monad
 import Parser
+import Traversable
 
 -- $setup
 -- >>> :set -XOverloadedStrings
@@ -201,8 +202,8 @@ data Digit3 =
 
 instance Show Digit3 where
   show (D1 d) = show d
-  show (D2 d1 d2) = show (show <$> d1:.d2:.Nil)
-  show (D3 d1 d2 d3) = show (show <$> d1:.d2:.d3:.Nil)
+  show (D2 d1 d2) = show (d1:.d2:.Nil)
+  show (D3 d1 d2 d3) = show (d1:.d2:.d3:.Nil)
 
 toChar :: Digit -> Char
 toChar Zero = '0'
@@ -316,6 +317,9 @@ fromChar _ =
 --
 -- >>> dollars "456789123456789012345678901234567890123456789012345678901234567890.12"
 -- "four hundred and fifty-six vigintillion seven hundred and eighty-nine novemdecillion one hundred and twenty-three octodecillion four hundred and fifty-six septendecillion seven hundred and eighty-nine sexdecillion twelve quindecillion three hundred and forty-five quattuordecillion six hundred and seventy-eight tredecillion nine hundred and one duodecillion two hundred and thirty-four undecillion five hundred and sixty-seven decillion eight hundred and ninety nonillion one hundred and twenty-three octillion four hundred and fifty-six septillion seven hundred and eighty-nine sextillion twelve quintillion three hundred and forty-five quadrillion six hundred and seventy-eight trillion nine hundred and one billion two hundred and thirty-four million five hundred and sixty-seven thousand eight hundred and ninety dollars and twelve cents"
+type TranslatedString = Chars
+type UnitString = Chars
+
 dollars ::
   Chars
   -> Chars
@@ -327,18 +331,30 @@ constructDigit3 (d:.Nil) = D1 <$> fromChar d
 constructDigit3 (d1:.d2:.Nil) = D2 <$> fromChar d1 <*> fromChar d2
 constructDigit3 (d1:.d2:.d3:.Nil) = D3 <$> fromChar d1 <*> fromChar d2 <*> fromChar d3
 
-showDigitsList :: List Digits -> Chars
-showDigitsList = 
-  error "todo: showDigitsList"
+-- addIllion <$> showDigitsList <$> (constructDigit3List $ listh "1029385372")
 
-showDigits :: Digit3 -> Chars
+addIllion :: List TranslatedString -> UnitString
+addIllion lt =
+  let 
+    illionsNeeded = reverse $ take (length lt) illion
+    result = zip lt illionsNeeded
+  in
+    flattenWith ' ' $ (\(numStr, unit) -> numStr ++ (' ':.unit)) <$> result
+
+constructDigit3List :: Chars -> Optional (List Digit3)
+constructDigit3List numStr = traverse constructDigit3 $ reverseDivide 3 numStr
+
+showDigitsList :: List Digit3 -> List TranslatedString
+showDigitsList ld = showDigits <$> ld
+
+showDigits :: Digit3 -> TranslatedString
 showDigits (D1 d) = showDigit d
 showDigits (D2 d1 d2) = show2Digits d1 d2
 showDigits (D3 d1 d2 d3) = show3Digits d1 d2 d3
 
 showDigit ::
   Digit
-  -> Chars
+  -> TranslatedString
 showDigit Zero =
   "zero"
 showDigit One =
@@ -360,7 +376,8 @@ showDigit Eight =
 showDigit Nine =
   "nine"
 
-show2Digits :: Digit -> Digit -> Chars
+show2Digits :: Digit -> Digit -> TranslatedString
+show2Digits Zero d1 = showDigit d1
 show2Digits One Zero = "ten"
 show2Digits One One = "eleven"
 show2Digits One Two = "twelve"
@@ -388,5 +405,6 @@ show2Digits Eight d2 = "eighty-" ++ showDigit d2
 show2Digits Nine Zero = "ninty"
 show2Digits Nine d2 = "ninty-" ++ showDigit d2
 
-show3Digits :: Digit -> Digit -> Digit -> Chars
+show3Digits :: Digit -> Digit -> Digit -> TranslatedString
+show3Digits Zero d2 d3 = show2Digits d2 d3
 show3Digits d1 d2 d3 = showDigit d1 ++ " hundred and " ++ show2Digits d2 d3
