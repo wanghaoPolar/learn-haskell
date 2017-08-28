@@ -502,7 +502,13 @@ splitAt n la = (take n la, drop n la)
 divide :: Integer -> List a -> List (List a)
 divide n la =
   let (thisTake, remain) = splitAt n la
-  in if length thisTake == n then thisTake:.(divide n remain) else thisTake:.Nil
+  in 
+    if length thisTake == n 
+      then 
+        if length remain /= 0
+          then thisTake:.(divide n remain) 
+          else thisTake:.Nil
+      else thisTake:.Nil
 
 reverseDivide :: Integer -> List a -> List (List a)
 reverseDivide _ Nil = Nil

@@ -319,19 +319,66 @@ fromChar _ =
 -- "four hundred and fifty-six vigintillion seven hundred and eighty-nine novemdecillion one hundred and twenty-three octodecillion four hundred and fifty-six septendecillion seven hundred and eighty-nine sexdecillion twelve quindecillion three hundred and forty-five quattuordecillion six hundred and seventy-eight tredecillion nine hundred and one duodecillion two hundred and thirty-four undecillion five hundred and sixty-seven decillion eight hundred and ninety nonillion one hundred and twenty-three octillion four hundred and fifty-six septillion seven hundred and eighty-nine sextillion twelve quintillion three hundred and forty-five quadrillion six hundred and seventy-eight trillion nine hundred and one billion two hundred and thirty-four million five hundred and sixty-seven thousand eight hundred and ninety dollars and twelve cents"
 type TranslatedString = Chars
 type UnitString = Chars
+type Money = (Chars, Chars)
 
 dollars ::
   Chars
-  -> Chars
-dollars =
-  error "todo: Cheque#dollars"
+  -> Optional Chars
+dollars str = 
+  let 
+    result = parse finalParser str
+  in
+    case result of
+      (Result _ (d1, d2)) -> (\a b -> (a ++ "dollars and " ++ b ++ "cents")) <$> (translate d1) <*> (translateCent d2)
+      otherwise -> Empty
+
+notDigitOrDot :: Parser Char
+notDigitOrDot = satisfy (\c -> (not $ isDigit c) && (c /= '.'))
+
+notDigit :: Parser Char
+notDigit = satisfy (\c -> (not $ isDigit c))
+
+onlyDigitParser :: Parser Char
+onlyDigitParser = list notDigit >>> digit <<< list notDigit
+-- parse onlyDigitParser $ listh "fdkj23e3ld93"
+-- parse (list onlyDigitParser) $ listh "fdkj23e3ld93"
+
+-- 取数字，直到遇见 '.'
+dollarNumParser :: Parser Chars
+dollarNumParser = list (list notDigitOrDot >>> digit <<< list notDigitOrDot)
+
+-- 取 0、1、2 个数字
+centNumParser :: Parser Chars
+centNumParser = (sequenceParser $ replicate 2 onlyDigitParser) ||| 
+  sequenceParser (onlyDigitParser:.Nil) ||| 
+  valueParser Nil
+
+dollarAndCentParser :: Parser Money
+dollarAndCentParser = (\a _ c -> (a, c)) <$> dollarNumParser <*> is '.' <*> centNumParser
+
+dollarParser :: Parser Money
+dollarParser = (\a -> (a, "")) <$> list onlyDigitParser
+
+centParser :: Parser Money
+centParser = (\_ a -> ("", a)) <$> (list notDigitOrDot) >>> is '.' <*> centNumParser
+
+finalParser :: Parser Money
+finalParser = dollarAndCentParser ||| centParser ||| dollarParser
 
 constructDigit3 :: Chars -> Optional Digit3
+constructDigit3 Nil = Empty
 constructDigit3 (d:.Nil) = D1 <$> fromChar d
 constructDigit3 (d1:.d2:.Nil) = D2 <$> fromChar d1 <*> fromChar d2
 constructDigit3 (d1:.d2:.d3:.Nil) = D3 <$> fromChar d1 <*> fromChar d2 <*> fromChar d3
 
--- addIllion <$> showDigitsList <$> (constructDigit3List $ listh "1029385372")
+translate :: Chars -> Optional UnitString
+translate str = addIllion <$> showDigitsList <$> (constructDigit3List str)
+
+translateCent :: Chars -> Optional UnitString
+translateCent str = 
+  case str of
+    (c1:.Nil) -> translate (c1:.'0':.Nil)
+    otherwise -> translate str
 
 addIllion :: List TranslatedString -> UnitString
 addIllion lt =
